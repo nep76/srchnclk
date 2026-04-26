@@ -1,13 +1,28 @@
 import os
+import ctypes
 import pyautogui
 import time
 from datetime import datetime, timedelta
 
+#---------------------------------------------------
+
 TARGET_HOUR = 6
 TARGET_MIN  = 30
-
 IMAGE_DIR = "images"
 
+#---------------------------------------------------
+
+ES_CONTINUOUS       = 0x80000000
+ES_SYSTEM_REQUIRED  = 0x00000002
+ES_DISPLAY_REQUIRED = 0x00000001
+
+def stay_awake( awake ):
+    if awake:
+        flags = ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+    else:
+        flags = ES_CONTINUOUS
+    
+    ctypes.windll.kernel32.SetThreadExecutionState( flags )
 
 def get_position( img_path ):
     retry = 5
@@ -57,11 +72,12 @@ target_unix = target.timestamp()
 
 print( f"直近の {TARGET_HOUR}時 {TARGET_MIN}分 を待っています" )
 
+stay_awake( True )
 try:
     while True:
         now_unix = time.time()
         print( f"\r残り { int( target_unix - now_unix ) } 秒     ", end="", flush=True )
-        if time.time() >= target_unix:
+        if now_unix >= target_unix:
             print( "指定時間に到達しました。クリックを試行します..." )
             for img in images:
                 print( f"{img}: ", end="" )
@@ -73,9 +89,15 @@ try:
                     print( "座標の取得に失敗" )
                 time.sleep( 2 )
             break
+        elif target_unix - now_unix < 10:
+            pyautogui.moveRel(  1, 0 )
+            pyautogui.moveRel( -1, 0 )
         time.sleep( 1 )
     print( "終了" )
     input()
 
 except KeyboardInterrupt:
-    exit()
+    pass
+
+finally:
+    stay_awake( False )
