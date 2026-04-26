@@ -68,6 +68,7 @@ try:
                 try:
                     pos = get_position( img )
                     pyautogui.click( pos )
+                    print( "OK" )
                 except pyautogui.ImageNotFoundException:
                     print( "座標の取得に失敗" )
                 time.sleep( 2 )
