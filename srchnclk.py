@@ -1,4 +1,5 @@
 import os
+import sys
 import ctypes
 import pyautogui
 import time
@@ -50,7 +51,7 @@ while True:
                 print( "OK" )
             except pyautogui.ImageNotFoundException:
                 print( "座標の取得に失敗" )
-                print( "何かキーを押して再試行..." )
+                print( "Enterキーを押して再試行..." )
                 input()
                 raise Exception( "RETRY" )
         break
@@ -93,11 +94,15 @@ try:
             pyautogui.moveRel(  1, 0 )
             pyautogui.moveRel( -1, 0 )
         time.sleep( 1 )
-    print( "終了" )
-    input()
 
 except KeyboardInterrupt:
-    pass
-
-finally:
     stay_awake( False )
+    sys.exit( 0 )
+
+except Exception as e:
+    import traceback
+    traceback.print_exc()
+
+stay_awake( False )
+print( "Enterキーを押して終了..." )
+input()
