@@ -1,5 +1,6 @@
 import os
 import sys
+import getopt
 import ctypes
 import pyautogui
 import time
@@ -7,17 +8,19 @@ from datetime import datetime, timedelta
 
 #---------------------------------------------------
 
-TARGET_HOUR = 6
-TARGET_MIN  = 30
-IMAGE_DIR = "images"
+g_prefs = {
+    "TargetHour": 6,
+    "TargetMin" : 30,
+    "ImageDir"  : "images"
+}
 
 #---------------------------------------------------
 
-ES_CONTINUOUS       = 0x80000000
-ES_SYSTEM_REQUIRED  = 0x00000002
-ES_DISPLAY_REQUIRED = 0x00000001
-
 def stay_awake( awake ):
+    ES_CONTINUOUS       = 0x80000000
+    ES_SYSTEM_REQUIRED  = 0x00000002
+    ES_DISPLAY_REQUIRED = 0x00000001
+
     if awake:
         flags = ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
     else:
@@ -34,13 +37,37 @@ def get_position( img_path ):
         retry -= 1
         time.sleep( 1 )
 
+def parse_args( args_array ):
+    if not args_array or len( args_array ) < 2:
+        raise ValueError( "Invalid arguments" )
+    
+    hour, min = [ int( x ) for x in args_array[0].split( ":" ) ]
+
+    if not ( hour >= 0 and hour < 23 ) or not( min >= 0 and min < 60 ):
+        raise ValueError( "Invalid time format" )
+    g_prefs["TargetHour"] = hour
+    g_prefs["TargetMin"]  = min
+
+    dir = args_array[1]
+    if not os.path.isdir( dir ):
+        raise ValueError( "No such image directory" )
+    g_prefs["ImageDir"] = dir
+
+try:
+    parse_args( sys.argv[1:] )
+except Exception as e:
+    print( e )
+    print( "Usage: %s TARGET_TIME[hh:mm] TARGET_DIR" % os.path.basename( sys.argv[0] ) )
+    exit( 1 )
+
 images = []
-for f in os.listdir( IMAGE_DIR ):
+for f in os.listdir( g_prefs["ImageDir"] ):
     if f.endswith( ".png" ):
-        images.append( os.path.join( IMAGE_DIR, f ) )
+        images.append( os.path.join( g_prefs["ImageDir"], f ) )
 
 if not images:
-    exit()
+    print( "画像が見つかりませんでした" )
+    exit( 1 )
 
 while True:
     try:
@@ -65,13 +92,13 @@ while True:
             exit()
 
 now = datetime.now()
-target = now.replace( hour=TARGET_HOUR, minute=TARGET_MIN, second=0, microsecond=0 )
+target = now.replace( hour=g_prefs["TargetHour"], minute=g_prefs["TargetMin"], second=0, microsecond=0 )
 if now > target:
     target += timedelta( days=1 )
 
 target_unix = target.timestamp()
 
-print( f"直近の {TARGET_HOUR}時 {TARGET_MIN}分 を待っています" )
+print( f"直近の {g_prefs["TargetHour"]}時 {g_prefs["TargetMin"]}分 を待っています" )
 
 stay_awake( True )
 try:
